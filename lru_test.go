@@ -75,3 +75,42 @@ func TestLRU_concurrent(t *testing.T) {
 	require(t, int32(0), evictedKeysCount.Load())
 	require(t, int32(1), storeCount.Load())
 }
+
+func TestLRU_size(t *testing.T) {
+	tests := []struct {
+		name      string
+		size      int
+		wantPanic bool
+	}{
+		{
+			name:      "zero size",
+			size:      0,
+			wantPanic: true,
+		},
+		{
+			name:      "negative size",
+			size:      -1,
+			wantPanic: true,
+		},
+		{
+			name:      "valid size",
+			size:      1,
+			wantPanic: false,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			defer func() {
+				r := recover()
+				if (r != nil) != tt.wantPanic {
+					t.Errorf("NewLRU() panic = %v, wantPanic = %v", r != nil, tt.wantPanic)
+				}
+				if r != nil && r != "ccache: size must be greater than 0" {
+					t.Errorf("NewLRU() unexpected panic message = %v", r)
+				}
+			}()
+			_ = ccache.NewLRU[int](tt.size)
+		})
+	}
+}

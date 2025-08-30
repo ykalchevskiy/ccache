@@ -31,6 +31,10 @@ type LRU[T any] struct {
 }
 
 func NewLRU[T any](size int, opts ...OptionLRU[T]) *LRU[T] {
+	if size <= 0 {
+        panic("ccache: size must be greater than 0")
+    }
+
 	c := &LRU[T]{
 		size: size,
 
