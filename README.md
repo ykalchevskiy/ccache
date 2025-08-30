@@ -70,7 +70,7 @@ package main
 import "github.com/ykalchevskiy/ccache"
 
 func main() {
-    cache := ccache.NewLRU(2, ccache.OnEvictionFunc[string](func(key string) { println(key + " evicted") }))
+    cache := ccache.MustLRU(2, ccache.OnEvictionFunc[string](func(key string) { println(key + " evicted") }))
 
     _, _ = cache.Do("k1", func() (string, error) { return "v1", nil }) //
     _, _ = cache.Do("k2", func() (string, error) { return "v2", nil }) //
