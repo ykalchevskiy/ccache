@@ -2,6 +2,7 @@ package ccache
 
 import (
 	"container/list"
+	"fmt"
 	"sync"
 )
 
@@ -30,7 +31,11 @@ type LRU[T any] struct {
 	l  *list.List
 }
 
-func NewLRU[T any](size int, opts ...OptionLRU[T]) *LRU[T] {
+func NewLRU[T any](size int, opts ...OptionLRU[T]) (*LRU[T], error) {
+	if size <= 0 {
+		return nil, fmt.Errorf("ccache: size must be greater than 0, got %d", size)
+	}
+
 	c := &LRU[T]{
 		size: size,
 
@@ -42,7 +47,15 @@ func NewLRU[T any](size int, opts ...OptionLRU[T]) *LRU[T] {
 		opt(c)
 	}
 
-	return c
+	return c, nil
+}
+
+func MustLRU[T any](size int, opts ...OptionLRU[T]) *LRU[T] {
+    c, err := NewLRU(size, opts...)
+    if err != nil {
+        panic(err)
+    }
+    return c
 }
 
 func (c *LRU[T]) Do(key string, f func() (T, error)) (T, error) {

@@ -10,7 +10,7 @@ import (
 
 func TestLRU(t *testing.T) {
 	var evictedKeys []string
-	cache := ccache.NewLRU(2, ccache.OnEvictionFunc[int](func(key string) {
+	cache := ccache.MustLRU(2, ccache.OnEvictionFunc[int](func(key string) {
 		evictedKeys = append(evictedKeys, key)
 	}))
 
@@ -52,7 +52,7 @@ func TestLRU(t *testing.T) {
 
 func TestLRU_concurrent(t *testing.T) {
 	evictedKeysCount := &atomic.Int32{}
-	cache := ccache.NewLRU(1, ccache.OnEvictionFunc[int](func(key string) {
+	cache := ccache.MustLRU(1, ccache.OnEvictionFunc[int](func(key string) {
 		evictedKeysCount.Add(1)
 	}))
 
@@ -74,4 +74,63 @@ func TestLRU_concurrent(t *testing.T) {
 
 	require(t, int32(0), evictedKeysCount.Load())
 	require(t, int32(1), storeCount.Load())
+}
+
+func TestLRU_sizeValidation(t *testing.T) {
+	tests := []struct {
+		name          string
+		size          int
+		expectedError string
+	}{
+		{
+			name:          "zero size",
+			size:          0,
+			expectedError: "ccache: size must be greater than 0, got 0",
+		},
+		{
+			name:          "negative size",
+			size:          -1,
+			expectedError: "ccache: size must be greater than 0, got -1",
+		},
+		{
+			name:          "valid size",
+			size:          1,
+			expectedError: "",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name+"_NewLRU", func(t *testing.T) {
+			_, err := ccache.NewLRU[string](tt.size)
+			if err == nil && tt.expectedError != "" {
+				t.Errorf("NewLRU() expected error %q, got nil", tt.expectedError)
+			}
+			if err != nil {
+				if tt.expectedError == "" {
+					t.Errorf("NewLRU() unexpected error: %v", err)
+				} else if err.Error() != tt.expectedError {
+					t.Errorf("NewLRU() error message = %q, want %q", err.Error(), tt.expectedError)
+				}
+			}
+		})
+
+		t.Run(tt.name+"_MustLRU", func(t *testing.T) {
+			defer func() {
+				r := recover()
+				if r == nil && tt.expectedError != "" {
+					t.Errorf("MustLRU() expected panic with %q, got nil", tt.expectedError)
+				}
+				if r != nil {
+					if tt.expectedError == "" {
+						t.Errorf("MustLRU() unexpected panic: %v", r)
+					} else if err, ok := r.(error); !ok {
+						t.Errorf("MustLRU() panic value is not an error: %v", r)
+					} else if err.Error() != tt.expectedError {
+						t.Errorf("MustLRU() panic message = %q, want %q", err.Error(), tt.expectedError)
+					}
+				}
+			}()
+			_ = ccache.MustLRU[string](tt.size)
+		})
+	}
 }
