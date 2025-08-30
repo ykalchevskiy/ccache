@@ -51,11 +51,11 @@ func NewLRU[T any](size int, opts ...OptionLRU[T]) (*LRU[T], error) {
 }
 
 func MustLRU[T any](size int, opts ...OptionLRU[T]) *LRU[T] {
-    c, err := NewLRU(size, opts...)
-    if err != nil {
-        panic(err)
-    }
-    return c
+	c, err := NewLRU(size, opts...)
+	if err != nil {
+		panic(err)
+	}
+	return c
 }
 
 func (c *LRU[T]) Do(key string, f func() (T, error)) (T, error) {
