@@ -7,9 +7,7 @@ import (
 )
 
 type entryLRU[T any] struct {
-	result T
-	err    error
-	ready  chan struct{}
+	onceFunc func() (T, error)
 
 	element *list.Element
 }
@@ -81,6 +79,7 @@ func MustLRU[T any](size int, opts ...OptionLRU[T]) *LRU[T] {
 // only one execution of f will occur, and all callers will receive the same result.
 func (c *LRU[T]) Do(key string, f func() (T, error)) (T, error) {
 	c.mu.Lock()
+
 	e, ok := c.m[key]
 	if !ok {
 		if len(c.m) == c.size {
@@ -94,19 +93,15 @@ func (c *LRU[T]) Do(key string, f func() (T, error)) (T, error) {
 		}
 		elem := c.l.PushFront(key)
 		e = &entryLRU[T]{
-			ready:   make(chan struct{}),
-			element: elem,
+			onceFunc: sync.OnceValues(f),
+			element:  elem,
 		}
 		c.m[key] = e
-		c.mu.Unlock()
-
-		e.result, e.err = f()
-		close(e.ready)
 	} else {
 		c.l.MoveToFront(e.element)
-		c.mu.Unlock()
-		<-e.ready
 	}
 
-	return e.result, e.err
+	c.mu.Unlock()
+
+	return e.onceFunc()
 }
