@@ -5,9 +5,7 @@ import (
 )
 
 type entry[T any] struct {
-	result T
-	err    error
-	ready  chan struct{}
+	onceFunc func() (T, error)
 }
 
 // CCache implements a concurrent cache that memoizes function results.
@@ -35,20 +33,16 @@ func New[T any]() *CCache[T] {
 // only one execution of f will occur, and all callers will receive the same result.
 func (c *CCache[T]) Do(key string, f func() (T, error)) (T, error) {
 	c.mu.Lock()
+
 	e, ok := c.m[key]
 	if !ok {
 		e = &entry[T]{
-			ready: make(chan struct{}),
+			onceFunc: sync.OnceValues(f),
 		}
 		c.m[key] = e
-		c.mu.Unlock()
-
-		e.result, e.err = f()
-		close(e.ready)
-	} else {
-		c.mu.Unlock()
-		<-e.ready
 	}
 
-	return e.result, e.err
+	c.mu.Unlock()
+
+	return e.onceFunc()
 }
