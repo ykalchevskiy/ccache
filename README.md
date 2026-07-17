@@ -1,7 +1,6 @@
 # Go concurrent non-blocking cache
 
 [![Go Reference](https://pkg.go.dev/badge/github.com/ykalchevskiy/ccache.svg)](https://pkg.go.dev/github.com/ykalchevskiy/ccache)
-[![Go Report Card](https://goreportcard.com/badge/github.com/ykalchevskiy/ccache)](https://goreportcard.com/report/github.com/ykalchevskiy/ccache)
 [![Go Version](https://img.shields.io/github/go-mod/go-version/ykalchevskiy/ccache)](https://golang.org/dl/)
 
 
